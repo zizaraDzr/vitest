@@ -1,56 +1,61 @@
 import { isNumeric, isValidJson } from '../src/helpers/index.js'
 
-enum Operation {
-   eq = 'eq',
-   neq = 'neq',
-   lte = 'lte',
-   gte = 'gte',
-   lt = 'lt',
-   gt = 'gt',
-   isNull = 'is_null',
-   isNotNull = 'is_not_null',
-   in = 'in',
-   notIn = 'not_in',
-}
-type filterTypes ='field' | 'constant'
-type componentType = 'agGrid' | 'list'
-type IRowClassRulesList = boolean | string;
- interface IDataFilters {
+export const Operation = {
+    eq: 'eq',
+    neq: 'neq',
+    lte: 'lte',
+    gte: 'gte',
+    lt: 'lt',
+    gt: 'gt',
+    isNull: 'is_null',
+    isNotNull: 'is_not_null',
+    in: 'in',
+    notIn: 'not_in',
+ } as const;
+
+ export type OperationKeys = keyof typeof Operation;
+ export type OperationValues = typeof Operation[OperationKeys];
+ export type MathOperationKeys =Exclude<OperationValues, 'is_null' | 'is_not_null' | 'in' | 'not_in' >
+ export type NotMathOperationKeys = Extract<OperationValues, 'is_null' | 'is_not_null' | 'in' | 'not_in' >
+ export type filterTypes ='field' | 'constant'
+ export type componentType = 'agGrid' | 'list'
+ export type IRowClassRulesList = boolean | string;
+ export interface IDataFilters {
   alias: string;
   attribute: string;
-  equalsType: Operation;
+  equalsType: OperationKeys;
   isKey: boolean;
   isXref: boolean;
   type: filterTypes
 }
-interface IRowClassRulesBuilder {
+export interface IRowClassRulesBuilder {
   id: number;
   operator: 'and'| 'or'
   className: string
   nameCondition: string
   dataFilter: IDataFilters[]
 }
-interface IRowClassRulesAgGrid {
+export interface IRowClassRulesAgGrid {
   [cssClassName: string]: (params: {data: any}) => boolean | string;
 }
 
-interface IModelCard {
+export interface IModelCard {
   id?: number,
   guid?: string,
   [attr: string]: any;
 }
-interface IDataTable {
+export interface IDataTable {
     [attr: string]: any;
   }
-interface IBuildData {
+export interface IBuildData {
   rules: IRowClassRulesBuilder[],
   modelCard: IModelCard,
   componentType?: componentType,
-  dataTable?:object[]
+  dataTable?:IDataTable
 }
-const notMathOperation = [Operation.isNull, Operation.isNotNull, Operation.in, Operation.notIn]
+export const notMathOperation = ['in','is_not_null','is_null','not_in'];
 
-const mathOperations = {
+export const mathOperations: { [K in MathOperationKeys]: (x: number, y: number) => boolean } = {
   [Operation.eq]: function (x: number, y: number): boolean { return x === y },
   [Operation.neq]: function (x: number, y: number): boolean { return x !== y },
   [Operation.lt]: function (x: number, y: number): boolean { return x < y },
@@ -58,8 +63,8 @@ const mathOperations = {
   [Operation.gt]: function (x: number, y: number): boolean { return x > y },
   [Operation.gte]: function (x: number, y: number): boolean { return x >= y }
 }
-const notMathOperations = {
-  [Operation.isNull]: function (x, y?): boolean {
+export const notMathOperations = {
+  [Operation.isNull]: function (x:any, y?:any): boolean {
     if (x === null) {
       return true
     }
@@ -76,7 +81,7 @@ const notMathOperations = {
 
     return true
   },
-  [Operation.isNotNull]: function (x, y?): boolean {
+  [Operation.isNotNull]: function (x:any, y?:any): boolean {
     if (x === null) {
       return false
     }
@@ -94,7 +99,7 @@ const notMathOperations = {
     return false
   },
   // множественная сслыка
-  [Operation.in]: function (x, y: string[] | number): boolean {
+  [Operation.in]: function (x:any, y?: string[] | number): boolean {
     let attr = x + ''
     let valueColumn = y + ''
     if (attr?.length && valueColumn?.length) {
@@ -106,7 +111,7 @@ const notMathOperations = {
     return false
   },
   // множественная сслыка
-  [Operation.notIn]: function (x, y: string[] | number): boolean {
+  [Operation.notIn]: function (x:any, y?: string[] | number): boolean {
     let attr = x + ''
     let valueColumn = y + ''
     if (attr?.length && valueColumn?.length) {
@@ -123,7 +128,7 @@ export default class RowClassRulesBuilder {
     'agGrid': RowClassRulesBuilder.aggrid,
     'list': RowClassRulesBuilder.list
   }
-  static build ({ rules, modelCard = {}, componentType = 'agGrid', dataTable }: IBuildData): IRowClassRulesAgGrid | IRowClassRulesList| null {
+  static build ({ rules, modelCard = {}, componentType = 'agGrid', dataTable }: IBuildData): IRowClassRulesAgGrid | IRowClassRulesList | null {
     const buildFunction = this.componentType[componentType].bind(this)
     if (typeof buildFunction === 'function') {
       const result = buildFunction({ rules, modelCard, dataTable })
@@ -157,11 +162,12 @@ export default class RowClassRulesBuilder {
 
     return result
   }
-  private static сalculateRule (dataTable:object[] | undefined, rules: IRowClassRulesBuilder, modelCard:IModelCard): boolean | string {
+  private static сalculateRule (dataTable: IDataTable | undefined, rules: IRowClassRulesBuilder, modelCard:IModelCard): boolean | string {
     if (dataTable) {
       let result: boolean[] = []
       result = rules.dataFilter.map(item => {
         let mathOperation = !notMathOperation.includes(item.equalsType)
+        console.log('mathOperation', mathOperation)
         if (item.type === 'constant' && mathOperation) {
           return this.сalculateConstant(item, dataTable)
         }
@@ -169,6 +175,7 @@ export default class RowClassRulesBuilder {
           return this.сalculateField(item, dataTable, modelCard)
         }
         if (!mathOperation) {
+         
           return this.сalculateNotMathOperation(item, dataTable, modelCard)
         }
         return false
@@ -194,7 +201,7 @@ export default class RowClassRulesBuilder {
     if (typeof value === 'undefined' || typeof attrColumn === 'undefined') {
       return false
     }
-    let equalsType: Omit<Operation, 'isNull', 'isNotNull'> = dataFilters.equalsType
+    let equalsType = dataFilters.equalsType as MathOperationKeys
 
     return mathOperations[equalsType](attrColumn, value)
   }
@@ -207,10 +214,14 @@ export default class RowClassRulesBuilder {
     // поле в карточке
     let value: number | undefined = this.conversionToNumber(modelCard[dataFilters.attribute])
     let attrColumn: number | undefined = this.conversionToNumber(dataTable[attr])
+    console.log('value', value)
+    console.log('modelCard', modelCard)
+    console.log('dataFilters', dataFilters)
+    console.log('attrColumn', attrColumn)
     if (typeof value === 'undefined' || typeof attrColumn === 'undefined') {
       return false
     }
-    let equalsType: Operation = dataFilters.equalsType
+    let equalsType = dataFilters.equalsType as MathOperationKeys
 
     return mathOperations[equalsType](attrColumn, value)
   }
@@ -221,7 +232,9 @@ export default class RowClassRulesBuilder {
     }
 
     let attrColumn: any = dataTable[attr]
-    let equalsType: Operation = dataFilters.equalsType
+    let equalsType = dataFilters.equalsType as NotMathOperationKeys
+    console.log('equalsType', equalsType)
+    console.log('attrColumn', attrColumn)
     // мн. ссылка
     if (dataFilters.type === 'field' && dataFilters.attribute) {
       let value: string[] = modelCard[dataFilters.attribute]
@@ -246,7 +259,14 @@ export default class RowClassRulesBuilder {
     if (isValidJson(value)) {
       let arrayXref = JSON.parse(value) || []
       // простая ссылка
-      let foundID = arrayXref.map(item => item.id)[0]
+      let foundID = arrayXref.map((item: unknown): string | number | undefined => {
+        if (item !== null && typeof item === 'object' ) {
+            const typedItem = item as {id?: (string | number)[]}
+            if (typedItem.id && Array.isArray(typedItem.id) && typedItem.id.length > 0) {
+                return typedItem.id[0];
+              }
+        }
+      })
       if (isNumeric(foundID)) {
         return +foundID
       }

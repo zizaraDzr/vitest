@@ -17,7 +17,7 @@
      * @return {boolean}
      */
       export function checkConditions (data, sourceRegistry = false, fields = {}) {
-        if (!data || data.type === 'never') {
+        if (!data || Object.keys(data).length === 0 || data.type === 'never') {
             return false
           } else if (data.type === 'always') {
             return true
