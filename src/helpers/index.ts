@@ -28,3 +28,24 @@ export const isValidJson = function (text: any): boolean {
 export const isNumeric = (n: any): boolean => {
     return !isNaN(parseFloat(n)) && isFinite(n)
   }
+
+  export const isEmpty = (value: any): boolean => {
+    if (value == null) { // Проверяет null и undefined
+      return true
+    }
+  
+    if (typeof value === 'string') {
+      const trimmedValue = value.trim()
+      return trimmedValue.length === 0 || trimmedValue === '[]'
+    }
+  
+    if (Array.isArray(value)) {
+      return value.length === 0
+    }
+  
+    if (typeof value === 'object') {
+      return Object.keys(value).length === 0
+    }
+  
+    return false
+  }

@@ -1,4 +1,4 @@
-import { isNumeric, isValidJson } from '../src/helpers/index.js'
+import { isEmpty, isNumeric, isValidJson } from '../src/helpers/index.js'
 
 export const Operation = {
     eq: 'eq',
@@ -11,19 +11,25 @@ export const Operation = {
     isNotNull: 'is_not_null',
     in: 'in',
     notIn: 'not_in',
+    equalsAll: 'equals_all',
+    notEqualsAll: 'not_equals_all',
+    cs: 'cs',
+    ncs: 'ncs',
  } as const;
 
  export type OperationKeys = keyof typeof Operation;
  export type OperationValues = typeof Operation[OperationKeys];
- export type MathOperationKeys =Exclude<OperationValues, 'is_null' | 'is_not_null' | 'in' | 'not_in' >
- export type NotMathOperationKeys = Extract<OperationValues, 'is_null' | 'is_not_null' | 'in' | 'not_in' >
+ export type MathOperationKeys = Extract<OperationValues, "eq" | "neq" | "lte" | "gte" | "lt" | "gt">
+ export type OperationXref = Extract<OperationValues, 'in' | 'not_in' | 'equals_all' | 'not_equals_all'>
+ export type OperationEmpty = Extract<OperationValues, 'is_null' | 'is_not_null'>
+ export type OperationString= Extract<OperationValues, 'cs' | 'ncs'>
  export type filterTypes ='field' | 'constant'
  export type componentType = 'agGrid' | 'list'
  export type IRowClassRulesList = boolean | string;
  export interface IDataFilters {
   alias: string;
   attribute: string;
-  equalsType: OperationKeys;
+  equalsType: OperationValues;
   isKey: boolean;
   isXref: boolean;
   type: filterTypes
@@ -53,75 +59,102 @@ export interface IBuildData {
   componentType?: componentType,
   dataTable?:IDataTable
 }
-export const notMathOperation = ['in','is_not_null','is_null','not_in'];
+export const mathOperation: MathOperationKeys[] = ['eq', 'gt', 'gte', 'lt', 'lte', 'neq'];
+export const operationXref: OperationXref[] = ['equals_all', 'in', 'not_equals_all', 'not_in'];
+export const operationEmpty: OperationEmpty[] = ['is_not_null', 'is_null'];
+export const operationString: OperationString[] = ['cs', 'ncs'];
 
 export const mathOperations: { [K in MathOperationKeys]: (x: number, y: number) => boolean } = {
-  [Operation.eq]: function (x: number, y: number): boolean { return x === y },
-  [Operation.neq]: function (x: number, y: number): boolean { return x !== y },
-  [Operation.lt]: function (x: number, y: number): boolean { return x < y },
-  [Operation.lte]: function (x: number, y: number): boolean { return x <= y },
-  [Operation.gt]: function (x: number, y: number): boolean { return x > y },
-  [Operation.gte]: function (x: number, y: number): boolean { return x >= y }
-}
-export const notMathOperations = {
-  [Operation.isNull]: function (x:any, y?:any): boolean {
-    if (x === null) {
-      return true
-    }
-    if (isValidJson(x)) {
-      let arrayXrefOrMulti = JSON.parse(x) || []
-      if (arrayXrefOrMulti.length > 0) {
-        return false
-      }
-      return true
-    }
-
-    if (isNumeric(x)) return false
-    if (x?.length) return false
-
-    return true
+  [Operation.eq]: (x, y) => x === y,
+  [Operation.neq]: (x, y) => x !== y,
+  [Operation.lt]: (x, y) => x < y,
+  [Operation.lte]: (x, y) => x <= y,
+  [Operation.gt]: (x, y) => x > y,
+  [Operation.gte]: (x, y) => x >= y,
+};
+// пусто / не пусто
+export const operationByEmpty: { [K in OperationEmpty]: (fieldTable: any) => boolean } = { 
+  [Operation.isNull]: (fieldTable) =>{
+    return isEmpty(fieldTable)
   },
-  [Operation.isNotNull]: function (x:any, y?:any): boolean {
-    if (x === null) {
-      return false
+  [Operation.isNotNull]: (fieldTable) =>{
+    return !isEmpty(fieldTable)
+  },
+}
+// содержит / не содержит
+export const operationByString: { [K in OperationString]: (fieldTable: string, fieldCard: string) => boolean }= { 
+  [Operation.cs]: (fieldTable, fieldCard) => {
+    let сardData = fieldCard.toLocaleLowerCase().trim()
+    let tableData = fieldTable.toLocaleLowerCase().trim()
+    if (сardData.length && tableData.length) {
+      let arrAttr = сardData.split(' ')
+      let arrvalue = tableData.split(',')
+      arrvalue = arrvalue.map(item => item.trim())
+      return arrAttr.some(el => arrvalue.toString().includes(el))
     }
-    if (isValidJson(x)) {
-      let arrayXrefOrMulti = JSON.parse(x) || []
-      if (arrayXrefOrMulti.length > 0) {
-        return true
-      }
-      return false
-    }
-
-    if (isNumeric(x)) return true
-    if (x?.length) return true
-
+  
     return false
   },
-  // множественная сслыка
-  [Operation.in]: function (x:any, y?: string[] | number): boolean {
-    let attr = x + ''
-    let valueColumn = y + ''
+  [Operation.ncs]: (fieldTable, fieldCard) => {
+    let сardData = fieldCard.toLocaleLowerCase().trim()
+    let tableData = fieldTable.toLocaleLowerCase().trim()
+    if (сardData.length && tableData.length) {
+      let arrAttr = сardData.split(' ')
+      let arrvalue = tableData.split(',')
+      arrvalue = arrvalue.map(item => item.trim())
+      return !arrAttr.some(el => arrvalue.toString().includes(el))
+    }
+  
+    return false
+  }
+}
+
+// множественная сслыка
+export const operationByXref: { [K in OperationXref]: (fieldTable: any, fieldCard?: string[] | number) => boolean } = {
+  [Operation.in]: (fieldTable, fieldCard?) => {
+    const attr = fieldTable + ''
+    const valueColumn = fieldCard + ''
     if (attr?.length && valueColumn?.length) {
-      let arrAttr = attr.split(',')
-      let arrvalueColumn = valueColumn.split(',')
+      const arrAttr = attr.split(',')
+      const arrvalueColumn = valueColumn.split(',')
       // сравнить элементы двух массивов
       return arrAttr.some(el => arrvalueColumn.includes(el))
     }
     return false
   },
-  // множественная сслыка
-  [Operation.notIn]: function (x:any, y?: string[] | number): boolean {
-    let attr = x + ''
-    let valueColumn = y + ''
+  [Operation.notIn]: (fieldTable, fieldCard?)=> {
+    const attr = fieldTable + ''
+    const valueColumn = fieldCard + ''
     if (attr?.length && valueColumn?.length) {
-      let arrAttr = attr.split(',')
-      let arrvalueColumn = valueColumn.split(',')
+      const arrAttr = attr.split(',')
+      const arrvalueColumn = valueColumn.split(',')
       // сравнить элементы двух массивов
       return !arrAttr.some(el => arrvalueColumn.includes(el))
     }
     return false
-  }
+  },
+  [Operation.equalsAll]: (fieldTable, fieldCard?)=>  {
+    const attr = fieldTable + ''
+    const valueColumn = fieldCard + ''
+    if (attr?.length && valueColumn?.length) {
+      const arrAttr = attr.split(',')
+      const arrvalueColumn = valueColumn.split(',')
+      // сравнить элементы двух массивов
+      return arrAttr.every(el => arrvalueColumn.includes(el))
+    }
+    return false
+  },
+  [Operation.notEqualsAll]: (fieldTable, fieldCard?)=>  {
+    const attr = fieldTable + ''
+    const valueColumn = fieldCard + ''
+    if (attr?.length && valueColumn?.length) {
+      const arrAttr = attr.split(',')
+      const arrvalueColumn = valueColumn.split(',')
+      // сравнить элементы двух массивов
+      return !arrAttr.every(el => arrvalueColumn.includes(el))
+    }
+    return false
+  },
 }
 export default class RowClassRulesBuilder {
   private static componentType = {
@@ -164,27 +197,29 @@ export default class RowClassRulesBuilder {
   }
   private static сalculateRule (dataTable: IDataTable | undefined, rules: IRowClassRulesBuilder, modelCard:IModelCard): boolean | string {
     if (dataTable) {
-      let result: boolean[] = []
-      result = rules.dataFilter.map(item => {
-        let mathOperation = !notMathOperation.includes(item.equalsType)
-        console.log('mathOperation', mathOperation)
-        if (item.type === 'constant' && mathOperation) {
+      const results: boolean[] = rules.dataFilter.map(item => {
+        let isMathOperation = false
+        if (mathOperation.some(element => element === item.equalsType)) {
+          isMathOperation = true
+        }
+        // console.log('isMathOperation', isMathOperation)
+        if (item.type === 'constant' && isMathOperation) {
           return this.сalculateConstant(item, dataTable)
         }
-        if (item.type === 'field' && mathOperation) {
+        if (item.type === 'field' && isMathOperation) {
           return this.сalculateField(item, dataTable, modelCard)
         }
-        if (!mathOperation) {
+        if (!isMathOperation) {
          
           return this.сalculateNotMathOperation(item, dataTable, modelCard)
         }
         return false
       })
       if (rules.operator === 'and') {
-        return result.every(item => item)
+        return results.every(item => item)
       }
       if (rules.operator === 'or') {
-        return result.some(item => item)
+        return results.some(item => item)
       }
     }
 
@@ -192,60 +227,59 @@ export default class RowClassRulesBuilder {
   }
   private static сalculateConstant (dataFilters: IDataFilters, dataTable: IDataTable): boolean {
     // Псевдоним атрибута
-    let attr: string = dataFilters.alias
-    if (dataFilters.isXref) {
-      attr = `${attr}id`
-    }
-    let value: number | undefined = this.conversionToNumber(dataFilters.attribute)
-    let attrColumn: number | undefined = this.conversionToNumber(dataTable[attr])
+    const attr = dataFilters.isXref ? `${dataFilters.alias}id` : dataFilters.alias;
+    const value = this.conversionToNumber(dataFilters.attribute);
+    const attrColumn = this.conversionToNumber(dataTable[attr]);
     if (typeof value === 'undefined' || typeof attrColumn === 'undefined') {
       return false
     }
-    let equalsType = dataFilters.equalsType as MathOperationKeys
+    const  equalsType = dataFilters.equalsType as MathOperationKeys
 
     return mathOperations[equalsType](attrColumn, value)
   }
   private static сalculateField (dataFilters: IDataFilters, dataTable: IDataTable, modelCard: IModelCard): boolean {
     // Псевдоним атрибута
-    let attr: string = dataFilters.alias
-    if (dataFilters.isXref) {
-      attr = `${attr}id`
-    }
+    const attr = dataFilters.isXref ? `${dataFilters.alias}id` : dataFilters.alias;
     // поле в карточке
-    let value: number | undefined = this.conversionToNumber(modelCard[dataFilters.attribute])
-    let attrColumn: number | undefined = this.conversionToNumber(dataTable[attr])
-    console.log('value', value)
-    console.log('modelCard', modelCard)
-    console.log('dataFilters', dataFilters)
-    console.log('attrColumn', attrColumn)
+    const value: number | undefined = this.conversionToNumber(modelCard[dataFilters.attribute])
+    const attrColumn: number | undefined = this.conversionToNumber(dataTable[attr])
     if (typeof value === 'undefined' || typeof attrColumn === 'undefined') {
       return false
     }
-    let equalsType = dataFilters.equalsType as MathOperationKeys
+    const  equalsType = dataFilters.equalsType as MathOperationKeys
 
     return mathOperations[equalsType](attrColumn, value)
   }
   private static сalculateNotMathOperation (dataFilters: IDataFilters, dataTable: IDataTable, modelCard: IModelCard): boolean {
-    let attr: string = dataFilters.alias
-    if (dataFilters.isXref) {
-      attr = `${attr}id`
-    }
+    const attr = dataFilters.isXref ? `${dataFilters.alias}id` : dataFilters.alias;
 
-    let attrColumn: any = dataTable[attr]
-    let equalsType = dataFilters.equalsType as NotMathOperationKeys
-    console.log('equalsType', equalsType)
-    console.log('attrColumn', attrColumn)
+    let attrColumn = dataTable[attr]
+    let equalsType = dataFilters.equalsType
     // мн. ссылка
-    if (dataFilters.type === 'field' && dataFilters.attribute) {
+    if (dataFilters.type === 'field' && dataFilters.attribute && operationXref.includes(equalsType as OperationXref)) {
       let value: string[] = modelCard[dataFilters.attribute]
       if (!attrColumn || !value) {
         return false
       }
-      // ожидается equalsType = in, notIn
-      return notMathOperations[equalsType](attrColumn, value)
+      return operationByXref[equalsType as OperationXref](attrColumn, value)
     }
+    
+    if (operationString.includes(equalsType as OperationString)) {
+      const value = dataFilters.type === 'field' ? modelCard[dataFilters.attribute] : dataFilters.attribute
+      if (typeof value !== 'string' || typeof attrColumn !== 'string') {
+        return false
+      }
 
-    return notMathOperations[equalsType](attrColumn)
+      // console.log('value', value)
+      return operationByString[equalsType as OperationString](attrColumn, value)
+    }
+    
+    if (operationEmpty.includes(equalsType as OperationEmpty)) {
+      return operationByEmpty[equalsType as OperationEmpty](attrColumn)
+    }
+   
+
+    return false
   }
   // Преобразовать данные в число
   private static conversionToNumber (value: any): number | undefined {
@@ -266,6 +300,7 @@ export default class RowClassRulesBuilder {
                 return typedItem.id[0];
               }
         }
+        return undefined
       })
       if (isNumeric(foundID)) {
         return +foundID
