@@ -49,3 +49,19 @@ export const isNumeric = (n: any): boolean => {
   
     return false
   }
+  export function isValidDate (dateString:string):boolean {
+    if (typeof dateString !== 'string') return false
+    // Проверяем, соответствует ли строка формату YYYY-MM-DD
+    const regex = /^\d{4}-\d{2}-\d{2}$/
+    if (!regex.test(dateString)) {
+      return false
+    }
+  
+    const parts = dateString.split('-')
+    const year = parseInt(parts[0], 10)
+    const month = parseInt(parts[1], 10)
+    const day = parseInt(parts[2], 10)
+  
+    const date = new Date(year, month - 1, day)
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+  }

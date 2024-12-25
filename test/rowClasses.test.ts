@@ -120,6 +120,34 @@ describe("1. Тест выделение строк по условию (кон�
       RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
     ).toHaveProperty(rules[0].className, true);
   });
+  test("1.5 константа больше (50 > 49) (ссылка)", () => {
+    const componentType: componentType = "list";
+    // если констаната modelCard - не учавствует в рассчете
+    const modelCard: IModelCard = { attr_N_: 0 };
+    const dataTable: IDataTable = { attr_N_: 50, attr_N_id: 51 };
+    const rules: IRowClassRulesBuilder[] = [
+      {
+        id: 1,
+        operator: "or",
+        className: "className",
+        nameCondition: "conditionsName",
+        dataFilter: [
+          {
+            alias: "attr_N_",
+            attribute: "50",
+            equalsType: 'gt',
+            isKey: false,
+            isXref: true,
+            type: "constant",
+          },
+        ],
+      },
+    ];
+
+    expect(
+      RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
+    ).toHaveProperty(rules[0].className, true);
+  });
 });
 describe("2. Тест выделение строк по условию (поле из карточки). Математические операции", () => {
   test("2.1 поле из карточки равна числу (не ссылка)", () => {
@@ -605,7 +633,7 @@ describe("6. Текст / строка", () => {
       attr_123_: [3, 1, 4],
     };
     const dataTable: IDataTable = {
-      alias: "_EDIT_196_DEL_196_VIEW_196_ACT_2_ADD_2_EDIT_2_текстович",
+      alias: "_EDIT_196_DEL_196_VIEW_196_ACT_2_ADD_2_EDIT_2_текстович nn",
     };
 
     const rules: IRowClassRulesBuilder[] = [
@@ -635,7 +663,7 @@ describe("6. Текст / строка", () => {
     const componentType: componentType = "list";
     // если констаната modelCard - не учавствует в рассчете
     const modelCard: IModelCard = {
-      asd: 'текстович имя_4',
+      asd: "текстович",
     };
     const dataTable: IDataTable = {
       alias: "текстович",
@@ -671,7 +699,7 @@ describe("6. Текст / строка", () => {
       attr_123_: [3, 1, 4],
     };
     const dataTable: IDataTable = {
-      alias: "текстоич",
+      alias: "текстови",
     };
 
     const rules: IRowClassRulesBuilder[] = [
@@ -701,7 +729,7 @@ describe("6. Текст / строка", () => {
     const componentType: componentType = "list";
     // если констаната modelCard - не учавствует в рассчете
     const modelCard: IModelCard = {
-      asd: 'текстоичаа текстовч',
+      asd: "текстоичаа текстовч текстовч",
     };
     const dataTable: IDataTable = {
       alias: "текстович",
@@ -720,6 +748,71 @@ describe("6. Текст / строка", () => {
             isXref: false,
             attribute: "asd",
             equalsType: "ncs",
+          },
+        ],
+        nameCondition: "Название условия",
+      },
+    ];
+
+    expect(
+      RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
+    ).toHaveProperty(rules[0].className, true);
+  });
+});
+
+describe("7. Сравнение дат", () => {
+  test("7.1 дата меньше. Значение константа", () => {
+    const componentType: componentType = "list";
+    // если констаната modelCard - не учавствует в рассчете
+    const modelCard: IModelCard = { qwerty: "2024-12-25" };
+    const dataTable: IDataTable = {
+      attr_1138_: "1999-12-24",
+    };
+
+    const rules: IRowClassRulesBuilder[] = [
+      {
+        id: 1697011846722,
+        operator: "and",
+        className: "grey",
+        dataFilter: [
+          {
+            alias: "attr_1138_",
+            attribute: "1999-12-23",
+            equalsType: 'gt',
+            isKey: false,
+            isXref: false,
+            type: 'constant',
+          },
+        ],
+        nameCondition: "Название условия",
+      },
+    ];
+
+    expect(
+      RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
+    ).toHaveProperty(rules[0].className, true);
+  });
+  test("7.2 дата меньше. Значение поле из карточки", () => {
+    const componentType: componentType = "list";
+    // если констаната modelCard - не учавствует в рассчете
+    const modelCard: IModelCard = { qwerty: "2024-12-25" };
+    const dataTable: IDataTable = {
+      attr_1138_: "2024-12-24",
+    };
+
+    const rules: IRowClassRulesBuilder[] = [
+      {
+        id: 1697011846722,
+        operator: "and",
+        className: "grey",
+        dataFilter: [
+          {
+            alias: "attr_1138_",
+            attribute: "qwerty",
+            equalsType: 'lt',
+            isKey: false,
+            isXref: false,
+            type: "field",
           },
         ],
         nameCondition: "Название условия",

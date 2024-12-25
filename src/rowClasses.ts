@@ -1,4 +1,4 @@
-import { isEmpty, isNumeric, isValidJson } from '../src/helpers/index.js'
+import { isEmpty, isNumeric, isValidJson, isValidDate } from '../src/helpers/index.js'
 
 export const Operation = {
     eq: 'eq',
@@ -64,7 +64,7 @@ export const operationXref: OperationXref[] = ['equals_all', 'in', 'not_equals_a
 export const operationEmpty: OperationEmpty[] = ['is_not_null', 'is_null'];
 export const operationString: OperationString[] = ['cs', 'ncs'];
 
-export const mathOperations: { [K in MathOperationKeys]: (x: number, y: number) => boolean } = {
+export const mathOperations: { [K in MathOperationKeys]: (x: number | string, y: number | string) => boolean } = {
   [Operation.eq]: (x, y) => x === y,
   [Operation.neq]: (x, y) => x !== y,
   [Operation.lt]: (x, y) => x < y,
@@ -204,10 +204,10 @@ export default class RowClassRulesBuilder {
         }
         // console.log('isMathOperation', isMathOperation)
         if (item.type === 'constant' && isMathOperation) {
-          return this.сalculateConstant(item, dataTable)
+          return this.сalculateMathConstant(item, dataTable)
         }
         if (item.type === 'field' && isMathOperation) {
-          return this.сalculateField(item, dataTable, modelCard)
+          return this.сalculateMathField(item, dataTable, modelCard)
         }
         if (!isMathOperation) {
          
@@ -225,28 +225,39 @@ export default class RowClassRulesBuilder {
 
     return ''
   }
-  private static сalculateConstant (dataFilters: IDataFilters, dataTable: IDataTable): boolean {
+  private static сalculateMathConstant (dataFilters: IDataFilters, dataTable: IDataTable): boolean {
     // Псевдоним атрибута
     const attr = dataFilters.isXref ? `${dataFilters.alias}id` : dataFilters.alias;
-    const value = this.conversionToNumber(dataFilters.attribute);
-    const attrColumn = this.conversionToNumber(dataTable[attr]);
+    const valueAsConst = dataFilters.attribute
+    const valueByTable = dataTable[attr]
+    const equalsType = dataFilters.equalsType as MathOperationKeys
+    if (isValidDate(valueAsConst) && isValidDate(valueByTable)) {
+      return mathOperations[equalsType](valueByTable, valueAsConst)
+    }
+    const value = this.conversionToNumber(valueAsConst);
+    const attrColumn = this.conversionToNumber(valueByTable);
     if (typeof value === 'undefined' || typeof attrColumn === 'undefined') {
       return false
     }
-    const  equalsType = dataFilters.equalsType as MathOperationKeys
 
     return mathOperations[equalsType](attrColumn, value)
   }
-  private static сalculateField (dataFilters: IDataFilters, dataTable: IDataTable, modelCard: IModelCard): boolean {
+  private static сalculateMathField (dataFilters: IDataFilters, dataTable: IDataTable, modelCard: IModelCard): boolean {
     // Псевдоним атрибута
     const attr = dataFilters.isXref ? `${dataFilters.alias}id` : dataFilters.alias;
+    const valueByCard = modelCard[dataFilters.attribute]
+    const valueByTable = dataTable[attr]
+    const equalsType = dataFilters.equalsType as MathOperationKeys
+
+    if (isValidDate(valueByCard) && isValidDate(valueByTable)) {
+      return mathOperations[equalsType](valueByTable, valueByCard)
+    }
     // поле в карточке
-    const value: number | undefined = this.conversionToNumber(modelCard[dataFilters.attribute])
-    const attrColumn: number | undefined = this.conversionToNumber(dataTable[attr])
+    const value: number | undefined = this.conversionToNumber(valueByCard)
+    const attrColumn: number | undefined = this.conversionToNumber(valueByTable)
     if (typeof value === 'undefined' || typeof attrColumn === 'undefined') {
       return false
     }
-    const  equalsType = dataFilters.equalsType as MathOperationKeys
 
     return mathOperations[equalsType](attrColumn, value)
   }
