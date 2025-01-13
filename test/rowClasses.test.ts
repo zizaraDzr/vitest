@@ -792,6 +792,45 @@ describe("7. Сравнение дат", () => {
       RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
     ).toHaveProperty(rules[0].className, true);
   });
+  test("7.1.1 дата между. Значение константа", () => {
+    const componentType: componentType = "list";
+    // если констаната modelCard - не учавствует в рассчете
+    const modelCard: IModelCard = { qwerty: "2024-12-25" };
+    const dataTable: IDataTable = {
+      attr_1138_: "1999-12-24",
+    };
+
+    const rules: IRowClassRulesBuilder[] = [
+      {
+        id: 1697011846722,
+        operator: "and",
+        className: "grey",
+        dataFilter: [
+          {
+            alias: "attr_1138_",
+            attribute: "1999-12-23",
+            equalsType: 'gt',
+            isKey: false,
+            isXref: false,
+            type: 'constant',
+          },
+          {
+            alias: "attr_1138_",
+            attribute: "1999-12-30",
+            equalsType: 'lt',
+            isKey: false,
+            isXref: false,
+            type: 'constant',
+          },
+        ],
+        nameCondition: "Название условия",
+      },
+    ];
+
+    expect(
+      RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
+    ).toHaveProperty(rules[0].className, true);
+  });
   test("7.2 дата меньше. Значение поле из карточки", () => {
     const componentType: componentType = "list";
     // если констаната modelCard - не учавствует в рассчете
