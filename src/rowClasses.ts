@@ -87,7 +87,8 @@ export const operationByString: { [K in OperationString]: (fieldTable: string, f
     let сardData = fieldCard.toLocaleLowerCase().trim()
     let tableData = fieldTable.toLocaleLowerCase().trim()
     if (сardData.length && tableData.length) {
-      let arrAttr = сardData.split(' ')
+       // /\s*[\s,]\s*/ - разбивает строку на подстроки, используя  пробельные символы или запятые в качестве разделителей.
+      let arrAttr = сardData.split(/\s*[\s,]\s*/)
       let arrvalue = tableData.split(',')
       arrvalue = arrvalue.map(item => item.trim())
       return arrAttr.some(el => arrvalue.toString().includes(el))
@@ -99,7 +100,8 @@ export const operationByString: { [K in OperationString]: (fieldTable: string, f
     let сardData = fieldCard.toLocaleLowerCase().trim()
     let tableData = fieldTable.toLocaleLowerCase().trim()
     if (сardData.length && tableData.length) {
-      let arrAttr = сardData.split(' ')
+       // /\s*[\s,]\s*/ - разбивает строку на подстроки, используя  пробельные символы или запятые в качестве разделителей.
+      let arrAttr = сardData.split(/\s*[\s,]\s*/)
       let arrvalue = tableData.split(',')
       arrvalue = arrvalue.map(item => item.trim())
       return !arrAttr.some(el => arrvalue.toString().includes(el))

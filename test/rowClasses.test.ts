@@ -758,6 +758,72 @@ describe("6. Текст / строка", () => {
       RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
     ).toHaveProperty(rules[0].className, true);
   });
+  test("6.5 Текст содержит (cs). Таблица содержит слово константу. Запятая С пробелом", () => {
+    const componentType: componentType = "list";
+    // если констаната modelCard - не учавствует в рассчете
+    const modelCard: IModelCard = {
+      attr_123_: [3, 1, 4],
+    };
+    const dataTable: IDataTable = {
+      alias: "проверка",
+    };
+
+    const rules: IRowClassRulesBuilder[] = [
+      {
+        id: 1697011846722,
+        operator: "and",
+        className: "grey",
+        dataFilter: [
+          {
+            type: "constant",
+            alias: "alias",
+            isKey: false,
+            isXref: false,
+            attribute: "1, п",
+            equalsType: "cs",
+          },
+        ],
+        nameCondition: "Название условия",
+      },
+    ];
+
+    expect(
+      RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
+    ).toHaveProperty(rules[0].className, true);
+  });
+  test("6.6 Текст содержит (cs). Таблица содержит слово константу. Запятая БЕЗ пробела", () => {
+    const componentType: componentType = "list";
+    // если констаната modelCard - не учавствует в рассчете
+    const modelCard: IModelCard = {
+      attr_123_: [3, 1, 4],
+    };
+    const dataTable: IDataTable = {
+      alias: "проверка",
+    };
+
+    const rules: IRowClassRulesBuilder[] = [
+      {
+        id: 1697011846722,
+        operator: "and",
+        className: "grey",
+        dataFilter: [
+          {
+            type: "constant",
+            alias: "alias",
+            isKey: false,
+            isXref: false,
+            attribute: "1,п",
+            equalsType: "cs",
+          },
+        ],
+        nameCondition: "Название условия",
+      },
+    ];
+
+    expect(
+      RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
+    ).toHaveProperty(rules[0].className, true);
+  });
 });
 
 describe("7. Сравнение дат", () => {
