@@ -40,7 +40,7 @@ describe("1. Тест выделение строк по условию (кон�
     const componentType: componentType = "list";
     // если констаната modelCard - не учавствует в рассчете
     const modelCard: IModelCard = { attr_N_: 0 };
-    const dataTable: IDataTable = { attr_N_: 50, attr_N_id: 50 };
+    const dataTable: IDataTable = { attr_N_: 999, attr_N_id: 50 };
     const rules: IRowClassRulesBuilder[] = [
       {
         id: 1,
@@ -138,6 +138,34 @@ describe("1. Тест выделение строк по условию (кон�
             equalsType: 'gt',
             isKey: false,
             isXref: true,
+            type: "constant",
+          },
+        ],
+      },
+    ];
+
+    expect(
+      RowClassRulesBuilder.build({ rules, modelCard, componentType, dataTable })
+    ).toHaveProperty(rules[0].className, true);
+  });
+  test("1.6 Ссылка + оптимизировать загрузку", () => {
+    const componentType: componentType = "list";
+    // если констаната modelCard - не учавствует в рассчете
+    const modelCard: IModelCard = { attr_N_: 0 };
+    const dataTable: IDataTable = { attr_N_: '[{"id": 100, "name": "Респ. Бурятия"}]', attr_N_id: 999 };
+    const rules: IRowClassRulesBuilder[] = [
+      {
+        id: 1,
+        operator: "or",
+        className: "className",
+        nameCondition: "conditionsName",
+        dataFilter: [
+          {
+            alias: "attr_N_",
+            attribute: "100",
+            equalsType: 'eq',
+            isKey: false,
+            isXref: false,
             type: "constant",
           },
         ],

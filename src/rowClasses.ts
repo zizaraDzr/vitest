@@ -308,9 +308,9 @@ export default class RowClassRulesBuilder {
       // простая ссылка
       let foundID = arrayXref.map((item: unknown): string | number | undefined => {
         if (item !== null && typeof item === 'object' ) {
-            const typedItem = item as {id?: (string | number)[]}
-            if (typedItem.id && Array.isArray(typedItem.id) && typedItem.id.length > 0) {
-                return typedItem.id[0];
+            const typedItem = item as {id?: (string | number)}
+            if (typedItem.id) {
+                return typedItem.id
               }
         }
         return undefined
